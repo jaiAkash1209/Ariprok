@@ -47,6 +47,12 @@ const ui = {
   timeline: document.getElementById("timeline"),
   timelineTemplate: document.getElementById("timelineTemplate"),
   clearLog: document.getElementById("clearLog"),
+  messageFeed: document.getElementById("messageFeed"),
+  messageForm: document.getElementById("messageForm"),
+  messageSender: document.getElementById("messageSender"),
+  messageRole: document.getElementById("messageRole"),
+  messageText: document.getElementById("messageText"),
+  messageStatus: document.getElementById("messageStatus"),
 };
 
 const modeMessages = {
@@ -146,6 +152,43 @@ function renderTimeline(events) {
   });
 }
 
+function formatMessageTime(value) {
+  return new Date(value).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function renderMessages(messages) {
+  if (!Array.isArray(messages)) {
+    return;
+  }
+
+  ui.messageFeed.innerHTML = "";
+
+  messages.forEach((message) => {
+    const article = document.createElement("article");
+    article.className = `message message--${message.role || "operator"}`;
+
+    const meta = document.createElement("div");
+    meta.className = "message__meta";
+
+    const sender = document.createElement("strong");
+    sender.textContent = message.sender || "Operator";
+
+    const time = document.createElement("span");
+    time.textContent = formatMessageTime(message.time);
+
+    meta.append(sender, time);
+
+    const body = document.createElement("p");
+    body.textContent = message.text || "";
+
+    article.append(meta, body);
+    ui.messageFeed.append(article);
+  });
+}
+
 function applyState(data) {
   ui.systemStatus.textContent = data.systemStatus;
   ui.riskValue.textContent = data.currentRisk;
@@ -200,6 +243,8 @@ function applyState(data) {
   if (Array.isArray(data.events)) {
     renderTimeline(data.events);
   }
+
+  renderMessages(data.messages);
 }
 
 async function callApi(path, options = {}) {
@@ -294,6 +339,32 @@ async function clearBackendLog() {
   }
 }
 
+async function sendMessage(event) {
+  event.preventDefault();
+
+  const sender = ui.messageSender.value.trim() || "Operator";
+  const role = ui.messageRole.value;
+  const text = ui.messageText.value.trim();
+
+  if (!text) {
+    ui.messageStatus.textContent = "Write a message before sending.";
+    return;
+  }
+
+  try {
+    ui.messageStatus.textContent = "Sending...";
+    await callApi("/api/messages", {
+      method: "POST",
+      body: JSON.stringify({ sender, role, text }),
+    });
+    ui.messageText.value = "";
+    ui.messageStatus.textContent = "Message sent to the dashboard thread.";
+    await refreshState();
+  } catch (error) {
+    ui.messageStatus.textContent = error.message;
+  }
+}
+
 async function startDesktopCamera() {
   if (!navigator.mediaDevices?.getUserMedia) {
     ui.lastEvent.textContent = "Webcam not supported in this browser";
@@ -384,8 +455,10 @@ ui.simulateTelemetry.addEventListener("click", simulateTelemetry);
 ui.connectStream.addEventListener("click", connectFutureStream);
 ui.fileInput.addEventListener("change", handleFileLoad);
 ui.clearLog.addEventListener("click", clearBackendLog);
+ui.messageForm.addEventListener("submit", sendMessage);
 
 setMode("desktop");
 hideDetectionOverlay();
+ui.messageSender.value = "Field Operator";
 refreshState();
 state.pollTimer = window.setInterval(refreshState, 4000);

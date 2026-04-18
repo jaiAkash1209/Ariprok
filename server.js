@@ -58,12 +58,42 @@ const state = {
       time: nowStamp(),
     },
   ],
+  messages: [
+    {
+      id: "msg-1",
+      sender: "CropSentinel",
+      role: "system",
+      text: "Message center ready. Use this thread for farmer updates, technician notes, and support coordination.",
+      time: nowStamp(),
+    },
+  ],
 };
 
 function pushEvent(title, body) {
   state.events.unshift({ title, body, time: nowStamp() });
   state.events = state.events.slice(0, 20);
   state.session.lastEvent = title;
+}
+
+function pushMessage(sender, text, role = "operator") {
+  const cleanSender = String(sender || "Operator").trim().slice(0, 32) || "Operator";
+  const cleanText = String(text || "").trim().slice(0, 500);
+
+  if (!cleanText) {
+    return null;
+  }
+
+  const message = {
+    id: `msg-${Date.now()}`,
+    sender: cleanSender,
+    role,
+    text: cleanText,
+    time: nowStamp(),
+  };
+
+  state.messages.unshift(message);
+  state.messages = state.messages.slice(0, 50);
+  return message;
 }
 
 function clamp(value, min = 0, max = 1) {
@@ -333,6 +363,27 @@ const server = http.createServer(async (request, response) => {
     return;
   }
 
+  if (request.method === "GET" && url.pathname === "/api/messages") {
+    sendJson(response, 200, { messages: state.messages });
+    return;
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/messages") {
+    try {
+      const payload = await readBody(request);
+      const message = pushMessage(payload.sender, payload.text, payload.role || "operator");
+      if (!message) {
+        sendJson(response, 400, { error: "Message text is required" });
+        return;
+      }
+      pushEvent("Message sent", `${message.sender} sent a new dashboard message.`);
+      sendJson(response, 200, { ok: true, message, messages: state.messages });
+    } catch (error) {
+      sendJson(response, 400, { error: error.message });
+    }
+    return;
+  }
+
   if (request.method === "POST" && url.pathname === "/api/detections") {
     try {
       const payload = await readBody(request);
@@ -380,6 +431,15 @@ const server = http.createServer(async (request, response) => {
       {
         title: "System reset",
         body: "The backend state was reset and is waiting for fresh payloads.",
+        time: nowStamp(),
+      },
+    ];
+    state.messages = [
+      {
+        id: "msg-reset",
+        sender: "CropSentinel",
+        role: "system",
+        text: "Message center reset. New updates will appear here.",
         time: nowStamp(),
       },
     ];

@@ -247,6 +247,52 @@
       <section class="panel panel--wide">
         <div class="panel__header">
           <div>
+            <p class="panel__eyebrow">Messaging</p>
+            <h2>Farmer And Support Thread</h2>
+          </div>
+        </div>
+        <div class="message-center">
+          <div class="message-feed" id="messageFeed">
+            <article class="message message--system">
+              <div class="message__meta">
+                <strong>CropSentinel</strong>
+                <span>Now</span>
+              </div>
+              <p>Message center ready. Use this thread for farmer updates, technician notes, and support coordination.</p>
+            </article>
+          </div>
+
+          <form class="message-compose" id="messageForm">
+            <div class="field-grid">
+              <label class="field">
+                <span>Sender</span>
+                <input id="messageSender" type="text" placeholder="Example: Field Operator">
+              </label>
+              <label class="field">
+                <span>Role</span>
+                <select id="messageRole">
+                  <option value="operator">Operator</option>
+                  <option value="farmer">Farmer</option>
+                  <option value="technician">Technician</option>
+                  <option value="system">System</option>
+                </select>
+              </label>
+            </div>
+            <label class="field">
+              <span>Message</span>
+              <textarea id="messageText" rows="4" placeholder="Write the latest farm update, field issue, or support note..."></textarea>
+            </label>
+            <div class="message-compose__actions">
+              <button class="btn btn--primary" type="submit">Send Message</button>
+              <p id="messageStatus">Messages stay inside the current dashboard service.</p>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <section class="panel panel--wide">
+        <div class="panel__header">
+          <div>
             <p class="panel__eyebrow">Field Node</p>
             <h2>ESP32 Telemetry Surface</h2>
           </div>

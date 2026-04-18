@@ -14,7 +14,7 @@
 
 const char *WIFI_SSID = "DESKTOP-17HKVHA 5137";
 const char *WIFI_PASSWORD = "mangai123";
-const char *SERVER_URL = "http://192.168.137.1:8000/api/sensors";
+const char *SERVER_URL = "http://ariprok.onrender.com/api/sensors";
 const char *DEVICE_ID = "ESP32-GROW-01";
 
 const int SOIL_PIN = 34;

@@ -630,7 +630,8 @@ video {
 .risk-grid,
 .sensor-grid,
 .phase-grid,
-.pipeline {
+.pipeline,
+.field-grid {
   display: grid;
   gap: 14px;
 }
@@ -776,6 +777,110 @@ video {
   font-size: 1.06rem;
 }
 
+.message-center {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+  gap: 18px;
+}
+
+.message-feed {
+  display: grid;
+  gap: 12px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.message {
+  padding: 16px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.message--system {
+  background: rgba(80, 173, 255, 0.08);
+}
+
+.message--farmer {
+  background: rgba(102, 209, 143, 0.08);
+}
+
+.message--technician {
+  background: rgba(240, 138, 36, 0.08);
+}
+
+.message__meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.message__meta strong {
+  font-family: "Sora", sans-serif;
+}
+
+.message__meta span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.message p {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.message-compose {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.field-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+.field span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  padding: 13px 14px;
+  outline: none;
+  resize: vertical;
+}
+
+.message-compose__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.message-compose__actions p {
+  margin: 0;
+  color: var(--muted);
+}
+
 @keyframes pulse {
   0% { transform: scale(0.98); }
   50% { transform: scale(1.02); }
@@ -788,10 +893,12 @@ video {
   .stage,
   .intel-grid,
   .sensor-grid,
+  .message-center,
   .phase-grid,
   .pipeline,
   .risk-grid,
-  .hero__story {
+  .hero__story,
+  .field-grid {
     grid-template-columns: 1fr;
   }
 }
