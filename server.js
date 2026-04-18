@@ -96,7 +96,6 @@ function setRiskLevel() {
   const latestConfidence = state.detection.latest?.confidence ?? 0;
   const latestPest = state.detection.latest?.pestName;
   const moisture = state.sensors.moisture;
-  const nitrogen = state.sensors.nitrogen;
 
   if (latestPest && latestConfidence >= 0.85) {
     state.currentRisk = "High";
@@ -106,8 +105,7 @@ function setRiskLevel() {
 
   if (
     (latestPest && latestConfidence >= 0.6) ||
-    (typeof moisture === "number" && moisture < 25) ||
-    (typeof nitrogen === "number" && nitrogen < 30)
+    (typeof moisture === "number" && moisture < 25)
   ) {
     state.currentRisk = "Medium";
     state.systemStatus = "Monitoring";
@@ -137,24 +135,19 @@ function applySensorPayload(payload) {
   state.sensors.temperature = normalizeNumber(sensors.temperature);
 
   const lowMoisture = typeof state.sensors.moisture === "number" && state.sensors.moisture < 25;
-  const lowNpk =
-    typeof state.sensors.nitrogen === "number" &&
-    typeof state.sensors.phosphorus === "number" &&
-    typeof state.sensors.potassium === "number" &&
-    (state.sensors.nitrogen < 30 || state.sensors.phosphorus < 20 || state.sensors.potassium < 20);
 
-  if (lowMoisture || lowNpk) {
+  if (lowMoisture) {
     state.detection.soilRisk = "Needs Attention";
-    state.detection.soilRiskText = "Soil readings are outside the preferred range. Review irrigation and nutrient dosing.";
+    state.detection.soilRiskText = "Soil moisture is outside the preferred range. Review irrigation and field conditions.";
   } else {
     state.detection.soilRisk = "Stable";
-    state.detection.soilRiskText = "Latest sensor payload looks healthy for moisture and NPK balance.";
+    state.detection.soilRiskText = "Latest sensor payload looks healthy for moisture, humidity, and temperature.";
   }
 
   setRiskLevel();
   pushEvent(
     "ESP32 telemetry received",
-    `Device ${state.deviceId} pushed fresh NPK and environment values into the dashboard.`
+    `Device ${state.deviceId} pushed fresh field environment values into the dashboard.`
   );
 }
 
@@ -270,9 +263,6 @@ function seedDemoData() {
   applySensorPayload({
     deviceId: "ESP32-GROW-01",
     sensors: {
-      nitrogen: 42,
-      phosphorus: 24,
-      potassium: 29,
       moisture: 37,
       humidity: 68.2,
       temperature: 29.4,

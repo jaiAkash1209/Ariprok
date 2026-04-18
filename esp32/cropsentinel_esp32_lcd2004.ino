@@ -12,10 +12,10 @@
   Common I2C addresses are 0x27 or 0x3F.
 */
 
-const char* WIFI_SSID = "YOUR_WIFI_NAME";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
-const char* SERVER_URL = "http://192.168.1.10:8000/api/sensors";
-const char* DEVICE_ID = "ESP32-GROW-01";
+const char *WIFI_SSID = "DESKTOP-17HKVHA 5137";
+const char *WIFI_PASSWORD = "mangai123";
+const char *SERVER_URL = "http://192.168.137.1:8000/api/sensors";
+const char *DEVICE_ID = "ESP32-GROW-01";
 
 const int SOIL_PIN = 34;
 const int DHT_PIN = 4;
@@ -43,25 +43,33 @@ unsigned long lastSensorReadMs = 0;
 unsigned long lastPostMs = 0;
 unsigned long lastWifiRetryMs = 0;
 
-int clampValue(int value, int minValue, int maxValue) {
-  if (value < minValue) return minValue;
-  if (value > maxValue) return maxValue;
+int clampValue(int value, int minValue, int maxValue)
+{
+  if (value < minValue)
+    return minValue;
+  if (value > maxValue)
+    return maxValue;
   return value;
 }
 
-int readSoilPercent() {
+int readSoilPercent()
+{
   soilRaw = analogRead(SOIL_PIN);
   long mapped = map(soilRaw, SOIL_DRY_RAW, SOIL_WET_RAW, 0, 100);
   return clampValue((int)mapped, 0, 100);
 }
 
-String formatNumberOrDash(float value, int decimals) {
-  if (isnan(value)) return "--";
+String formatNumberOrDash(float value, int decimals)
+{
+  if (isnan(value))
+    return "--";
   return String(value, decimals);
 }
 
-void connectWiFi() {
-  if (WiFi.status() == WL_CONNECTED) {
+void connectWiFi()
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
     wifiState = "ONLINE";
     return;
   }
@@ -71,32 +79,38 @@ void connectWiFi() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
   unsigned long startMs = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - startMs < 12000) {
+  while (WiFi.status() != WL_CONNECTED && millis() - startMs < 12000)
+  {
     delay(400);
   }
 
   wifiState = (WiFi.status() == WL_CONNECTED) ? "ONLINE" : "OFFLINE";
 }
 
-void ensureWiFi() {
-  if (WiFi.status() == WL_CONNECTED) {
+void ensureWiFi()
+{
+  if (WiFi.status() == WL_CONNECTED)
+  {
     wifiState = "ONLINE";
     return;
   }
 
-  if (millis() - lastWifiRetryMs >= WIFI_RETRY_INTERVAL_MS) {
+  if (millis() - lastWifiRetryMs >= WIFI_RETRY_INTERVAL_MS)
+  {
     lastWifiRetryMs = millis();
     connectWiFi();
   }
 }
 
-void readSensors() {
+void readSensors()
+{
   soilPercent = readSoilPercent();
   humidityValue = dht.readHumidity();
   temperatureValue = dht.readTemperature();
 }
 
-void printTelemetryToSerial() {
+void printTelemetryToSerial()
+{
   Serial.print("{\"deviceId\":\"");
   Serial.print(DEVICE_ID);
   Serial.print("\",\"soil_raw\":");
@@ -104,16 +118,22 @@ void printTelemetryToSerial() {
   Serial.print(",\"moisture\":");
   Serial.print(soilPercent);
   Serial.print(",\"humidity\":");
-  if (isnan(humidityValue)) Serial.print("null");
-  else Serial.print(humidityValue, 1);
+  if (isnan(humidityValue))
+    Serial.print("null");
+  else
+    Serial.print(humidityValue, 1);
   Serial.print(",\"temperature\":");
-  if (isnan(temperatureValue)) Serial.print("null");
-  else Serial.print(temperatureValue, 1);
+  if (isnan(temperatureValue))
+    Serial.print("null");
+  else
+    Serial.print(temperatureValue, 1);
   Serial.println("}");
 }
 
-bool postTelemetry() {
-  if (WiFi.status() != WL_CONNECTED) {
+bool postTelemetry()
+{
+  if (WiFi.status() != WL_CONNECTED)
+  {
     postState = "NO WIFI";
     return false;
   }
@@ -137,11 +157,14 @@ bool postTelemetry() {
   bool ok = httpCode > 0 && httpCode < 300;
   postState = ok ? "POST OK" : ("ERR " + String(httpCode));
 
-  if (httpCode > 0) {
+  if (httpCode > 0)
+  {
     Serial.print("HTTP ");
     Serial.println(httpCode);
     Serial.println(http.getString());
-  } else {
+  }
+  else
+  {
     Serial.print("POST failed: ");
     Serial.println(http.errorToString(httpCode));
   }
@@ -150,25 +173,29 @@ bool postTelemetry() {
   return ok;
 }
 
-void clearLine(int row) {
+void clearLine(int row)
+{
   lcd.setCursor(0, row);
   lcd.print("                    ");
 }
 
-void printLine(int row, const String& value) {
+void printLine(int row, const String &value)
+{
   clearLine(row);
   lcd.setCursor(0, row);
   lcd.print(value.substring(0, 20));
 }
 
-void updateDisplay() {
+void updateDisplay()
+{
   printLine(0, "CropSentinel Node");
   printLine(1, "Soil:" + String(soilPercent) + "% Hum:" + formatNumberOrDash(humidityValue, 1));
   printLine(2, "Temp:" + formatNumberOrDash(temperatureValue, 1) + "C " + wifiState);
   printLine(3, "Post:" + postState);
 }
 
-void setupDisplay() {
+void setupDisplay()
+{
   lcd.init();
   lcd.backlight();
   lcd.clear();
@@ -179,7 +206,8 @@ void setupDisplay() {
   delay(1200);
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
   delay(500);
 
@@ -195,17 +223,20 @@ void setup() {
   updateDisplay();
 }
 
-void loop() {
+void loop()
+{
   ensureWiFi();
 
-  if (millis() - lastSensorReadMs >= SENSOR_INTERVAL_MS) {
+  if (millis() - lastSensorReadMs >= SENSOR_INTERVAL_MS)
+  {
     lastSensorReadMs = millis();
     readSensors();
     printTelemetryToSerial();
     updateDisplay();
   }
 
-  if (millis() - lastPostMs >= POST_INTERVAL_MS) {
+  if (millis() - lastPostMs >= POST_INTERVAL_MS)
+  {
     lastPostMs = millis();
     postTelemetry();
     updateDisplay();

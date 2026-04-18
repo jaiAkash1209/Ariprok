@@ -36,12 +36,12 @@ const ui = {
   trapRisk: document.getElementById("trapRisk"),
   soilRisk: document.getElementById("soilRisk"),
   soilRiskText: document.getElementById("soilRiskText"),
-  nitrogenValue: document.getElementById("nitrogenValue"),
-  nitrogenHint: document.getElementById("nitrogenHint"),
-  phosphorusValue: document.getElementById("phosphorusValue"),
-  phosphorusHint: document.getElementById("phosphorusHint"),
-  potassiumValue: document.getElementById("potassiumValue"),
-  potassiumHint: document.getElementById("potassiumHint"),
+  moistureValue: document.getElementById("moistureValue"),
+  moistureHint: document.getElementById("moistureHint"),
+  humidityValue: document.getElementById("humidityValue"),
+  humidityHint: document.getElementById("humidityHint"),
+  temperatureValue: document.getElementById("temperatureValue"),
+  temperatureHint: document.getElementById("temperatureHint"),
   environmentValue: document.getElementById("environmentValue"),
   environmentHint: document.getElementById("environmentHint"),
   timeline: document.getElementById("timeline"),
@@ -164,10 +164,9 @@ function applyState(data) {
   ui.streamInput.value = data.phoneStreamTarget || "";
   ui.fpsBadge.textContent = data.fps;
 
-  ui.nitrogenValue.textContent = renderSensorValue(data.sensors.nitrogen, " mg/kg");
-  ui.phosphorusValue.textContent = renderSensorValue(data.sensors.phosphorus, " mg/kg");
-  ui.potassiumValue.textContent = renderSensorValue(data.sensors.potassium, " mg/kg");
-
+  ui.moistureValue.textContent = renderSensorValue(data.sensors.moisture, "%");
+  ui.humidityValue.textContent = renderSensorValue(data.sensors.humidity, "% RH");
+  ui.temperatureValue.textContent = renderSensorValue(data.sensors.temperature, " C");
   const temperature = renderSensorValue(data.sensors.temperature, " C");
   const humidity = renderSensorValue(data.sensors.humidity, "% RH");
   const moisture = renderSensorValue(data.sensors.moisture, "%");
@@ -182,18 +181,18 @@ function applyState(data) {
       ? "Temperature, humidity, and moisture values received from the latest ESP32 payload."
       : "Temperature, humidity, and moisture will appear here from the ESP32 payload.";
 
-  ui.nitrogenHint.textContent =
-    typeof data.sensors.nitrogen === "number"
-      ? "Latest nitrogen value received from the field node."
-      : "To be read from NPK probe via ESP32 serial/Wi-Fi.";
-  ui.phosphorusHint.textContent =
-    typeof data.sensors.phosphorus === "number"
-      ? "Latest phosphorus value received from the field node."
-      : "Reserved for nutrient trend alerts and crop advisory logic.";
-  ui.potassiumHint.textContent =
-    typeof data.sensors.potassium === "number"
-      ? "Latest potassium value received from the field node."
-      : "Will feed health scoring alongside camera-based pest detection.";
+  ui.moistureHint.textContent =
+    typeof data.sensors.moisture === "number"
+      ? "Latest soil moisture value received from the field node."
+      : "Live soil moisture reading from the ESP32 field node.";
+  ui.humidityHint.textContent =
+    typeof data.sensors.humidity === "number"
+      ? "Latest air humidity value received from the field node."
+      : "Air humidity helps explain stress and pest-favorable conditions.";
+  ui.temperatureHint.textContent =
+    typeof data.sensors.temperature === "number"
+      ? "Latest ambient temperature value received from the field node."
+      : "Ambient temperature from the field node.";
 
   renderDetectionOverlay(data.detection.latest);
   setBadgeText(data.systemStatus, data.pairingStatus);
@@ -271,9 +270,6 @@ async function simulateTelemetry() {
       body: JSON.stringify({
         deviceId: "ESP32-GROW-01",
         sensors: {
-          nitrogen: 42,
-          phosphorus: 24,
-          potassium: 29,
           moisture: 37,
           humidity: 68.2,
           temperature: 29.4,
