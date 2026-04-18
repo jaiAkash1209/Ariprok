@@ -4,7 +4,7 @@ CropSentinel is now a local full-app starter for a pest-detection system that ca
 
 - phone camera or desktop webcam input
 - MATLAB pest detection results
-- ESP32 + NPK + environment telemetry
+- ESP32 + environment telemetry
 - a single desktop dashboard for alerts and farm-health status
 
 ## Files
@@ -86,14 +86,29 @@ Example payload:
 {
   "deviceId": "ESP32-GROW-01",
   "sensors": {
-    "nitrogen": 42,
-    "phosphorus": 24,
-    "potassium": 29,
     "moisture": 37,
+    "humidity": 68.2,
     "temperature": 29.4
   }
 }
 ```
+
+Firmware starter:
+
+- `esp32/cropsentinel_esp32.ino`
+
+Before uploading to the ESP32, edit these values in the sketch:
+
+```cpp
+const char* WIFI_SSID = "YOUR_WIFI_NAME";
+const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char* SERVER_URL = "http://YOUR_PC_IP:8000/api/sensors";
+```
+
+Important:
+- if the website is running on your computer, use your computer's local IP, not `localhost`
+- the ESP32 and your computer must be on the same Wi-Fi network
+- the sketch currently assumes an `SSD1306 OLED`, `DHT22`, and an analog moisture sensor
 
 ## API Endpoints
 
@@ -108,5 +123,5 @@ Example payload:
 
 1. Connect your real MATLAB detection code to `/api/detections`.
 2. Build the phone camera sender page or IP-camera stream hook.
-3. Write ESP32 firmware to send NPK and environment data to `/api/sensors`.
+3. Upload the ESP32 firmware and verify live sensor posts to `/api/sensors`.
 4. Add a decision engine for pesticide advice or automated action.

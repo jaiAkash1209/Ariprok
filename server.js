@@ -48,6 +48,7 @@ const state = {
     phosphorus: null,
     potassium: null,
     moisture: null,
+    humidity: null,
     temperature: null,
   },
   events: [
@@ -132,6 +133,7 @@ function applySensorPayload(payload) {
   state.sensors.phosphorus = normalizeNumber(sensors.phosphorus);
   state.sensors.potassium = normalizeNumber(sensors.potassium);
   state.sensors.moisture = normalizeNumber(sensors.moisture);
+  state.sensors.humidity = normalizeNumber(sensors.humidity);
   state.sensors.temperature = normalizeNumber(sensors.temperature);
 
   const lowMoisture = typeof state.sensors.moisture === "number" && state.sensors.moisture < 25;
@@ -272,6 +274,7 @@ function seedDemoData() {
       phosphorus: 24,
       potassium: 29,
       moisture: 37,
+      humidity: 68.2,
       temperature: 29.4,
     },
   });
@@ -380,6 +383,7 @@ const server = http.createServer(async (request, response) => {
       phosphorus: null,
       potassium: null,
       moisture: null,
+      humidity: null,
       temperature: null,
     };
     state.events = [

@@ -169,12 +169,18 @@ function applyState(data) {
   ui.potassiumValue.textContent = renderSensorValue(data.sensors.potassium, " mg/kg");
 
   const temperature = renderSensorValue(data.sensors.temperature, " C");
+  const humidity = renderSensorValue(data.sensors.humidity, "% RH");
   const moisture = renderSensorValue(data.sensors.moisture, "%");
-  ui.environmentValue.textContent = temperature === "--" && moisture === "--" ? "--" : `${temperature} / ${moisture}`;
+  ui.environmentValue.textContent =
+    temperature === "--" && humidity === "--" && moisture === "--"
+      ? "--"
+      : `${temperature} / ${humidity} / ${moisture}`;
   ui.environmentHint.textContent =
-    typeof data.sensors.temperature === "number" || typeof data.sensors.moisture === "number"
-      ? "Temperature / moisture values received from the latest ESP32 payload."
-      : "Temperature and moisture will appear here from the ESP32 payload.";
+    typeof data.sensors.temperature === "number" ||
+    typeof data.sensors.humidity === "number" ||
+    typeof data.sensors.moisture === "number"
+      ? "Temperature, humidity, and moisture values received from the latest ESP32 payload."
+      : "Temperature, humidity, and moisture will appear here from the ESP32 payload.";
 
   ui.nitrogenHint.textContent =
     typeof data.sensors.nitrogen === "number"
@@ -269,6 +275,7 @@ async function simulateTelemetry() {
           phosphorus: 24,
           potassium: 29,
           moisture: 37,
+          humidity: 68.2,
           temperature: 29.4,
         },
       }),
