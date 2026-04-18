@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CropSentinel | Farm Intelligence Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <nav class="topbar">
+        <div class="brand">
+          <span class="brand__mark">CS</span>
+          <div>
+            <strong>CropSentinel</strong>
+            <p>Farm intelligence for pest detection and field telemetry</p>
+          </div>
+        </div>
+        <div class="topbar__meta">
+          <span class="chip">Pilot Build</span>
+          <span class="chip chip--soft">Roadmap Driven</span>
+        </div>
+      </nav>
+
+      <div class="hero__grid">
+        <section class="hero__copy">
+          <p class="eyebrow">Roadmap To Product</p>
+          <h1>From pest vision to field action in one operating console.</h1>
+          <p class="hero__text">
+            CropSentinel combines live crop imagery, MATLAB pest detection, and ESP32 field sensing
+            into one deployable workflow. This site is designed around the real product road map:
+            detect, sense, validate, pilot, then scale.
+          </p>
+          <div class="hero__actions">
+            <button class="btn btn--primary" id="startSession">Start Monitoring</button>
+            <button class="btn btn--ghost" id="simulateAlert">Simulate Detection</button>
+            <button class="btn btn--ghost" id="simulateTelemetry">Inject Sensor Demo</button>
+          </div>
+
+          <div class="hero__story">
+            <article class="story-card">
+              <span>Vision Layer</span>
+              <strong>Camera + MATLAB</strong>
+              <p>Detect pests from live feed, bounding boxes, and confidence scores.</p>
+            </article>
+            <article class="story-card">
+              <span>Field Node</span>
+              <strong>ESP32 + Sensors</strong>
+              <p>Capture soil moisture, humidity, and temperature from the crop environment.</p>
+            </article>
+            <article class="story-card">
+              <span>Decision Layer</span>
+              <strong>Farmer Dashboard</strong>
+              <p>Merge crop vision with field conditions into one operational view.</p>
+            </article>
+          </div>
+        </section>
+
+        <aside class="hero__status">
+          <div class="status-card status-card--strong">
+            <span class="status-card__label">System Status</span>
+            <strong id="systemStatus">Standby</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-card__label">Current Risk</span>
+            <strong id="riskValue">Low</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-card__label">Phone Camera Link</span>
+            <strong id="pairingStatus">Not Paired</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-card__label">MATLAB Engine</span>
+            <strong id="matlabStatus">Waiting</strong>
+          </div>
+        </aside>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="operations">
+        <article class="panel panel--vision">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Operational Vision</p>
+              <h2>Live Detection Console</h2>
+            </div>
+            <div class="mode-switch" id="sourceModes">
+              <button class="mode-switch__item is-active" data-mode="desktop">Desktop Webcam</button>
+              <button class="mode-switch__item" data-mode="phone">Phone Camera</button>
+              <button class="mode-switch__item" data-mode="upload">Upload Clip</button>
+            </div>
+          </div>
+
+          <div class="stage">
+            <div class="stage__viewport">
+              <video id="liveVideo" autoplay muted playsinline></video>
+              <div class="stage__placeholder" id="videoPlaceholder">
+                <div class="signal-orb"></div>
+                <h3 id="placeholderTitle">Camera feed waiting</h3>
+                <p id="placeholderText">Connect a live source to start the pest detection pipeline.</p>
+              </div>
+              <div class="detection-box is-hidden" id="detectionBox">
+                <div class="detection-box__label" id="detectionLabel">Pest detected</div>
+              </div>
+              <div class="stage__overlay">
+                <span>Detection Stage</span>
+                <span id="fpsBadge">Idle</span>
+              </div>
+            </div>
+
+            <div class="command">
+              <div class="card">
+                <h3>Capture Controls</h3>
+                <div class="control-list">
+                  <button class="btn btn--secondary" id="desktopConnect">Use Desktop Webcam</button>
+                  <button class="btn btn--secondary" id="phonePair">Prepare Phone Link</button>
+                  <label class="upload">
+                    <input type="file" id="fileInput" accept="image/*,video/*">
+                    <span>Load Image or Video</span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="card">
+                <h3>Session Snapshot</h3>
+                <ul class="stats">
+                  <li><span>Frames reviewed</span><strong id="framesReviewed">000</strong></li>
+                  <li><span>Pests flagged</span><strong id="pestsFlagged">00</strong></li>
+                  <li><span>Last event</span><strong id="lastEvent">No alerts yet</strong></li>
+                </ul>
+              </div>
+
+              <div class="card">
+                <h3>Field Node Status</h3>
+                <ul class="stats">
+                  <li><span>ESP32 link</span><strong id="esp32Status">Waiting</strong></li>
+                  <li><span>Device ID</span><strong id="deviceId">ESP32-GROW-01</strong></li>
+                  <li><span>Last sync</span><strong id="lastSync">Not synced</strong></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel panel--bridge">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Bridge Layer</p>
+              <h2>Camera Pairing And Feed Intake</h2>
+            </div>
+            <span class="pill" id="phoneBadge">Planned Connection</span>
+          </div>
+
+          <div class="bridge">
+            <div class="bridge__graphic">
+              <div class="bridge__ring"></div>
+              <div class="bridge__labels">
+                <span>Phone</span>
+                <span>Gateway</span>
+                <span>Dashboard</span>
+              </div>
+            </div>
+            <div class="bridge__content">
+              <h3>Designed for phone-first pilot deployment.</h3>
+              <p>
+                The pilot path uses a phone or fixed camera for crop vision, then sends detections to the
+                dashboard while the ESP32 provides field telemetry beside it.
+              </p>
+              <div class="road-steps">
+                <div class="road-step">
+                  <strong>01</strong>
+                  <p>Open or mount the camera source in the crop zone.</p>
+                </div>
+                <div class="road-step">
+                  <strong>02</strong>
+                  <p>Run MATLAB detection and return pest labels with bounding boxes.</p>
+                </div>
+                <div class="road-step">
+                  <strong>03</strong>
+                  <p>Combine image alerts with the ESP32 field node in one view.</p>
+                </div>
+              </div>
+              <div class="stream-url">
+                <label for="streamInput">Future stream URL / session code</label>
+                <div class="stream-url__row">
+                  <input id="streamInput" type="text" placeholder="Example: webrtc-session-01 or http://phone-stream.local/video">
+                  <button class="btn btn--primary" id="connectStream">Connect</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      </section>
+
+      <section class="intel-grid">
+        <article class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Risk Engine</p>
+              <h2>Detection State</h2>
+            </div>
+          </div>
+          <div class="risk-grid">
+            <div class="risk-card risk-card--alert">
+              <span class="risk-card__tag">Leaf Activity</span>
+              <strong id="leafRisk">Monitoring</strong>
+              <p>Primary pest interpretation coming from live imagery and MATLAB detection.</p>
+            </div>
+            <div class="risk-card risk-card--watch">
+              <span class="risk-card__tag">Action Priority</span>
+              <strong id="trapRisk">Stable</strong>
+              <p>Operational action band for review, scouting, or immediate field inspection.</p>
+            </div>
+            <div class="risk-card risk-card--env">
+              <span class="risk-card__tag">Field Condition</span>
+              <strong id="soilRisk">Pending Sync</strong>
+              <p id="soilRiskText">ESP32 telemetry will set the field condition summary for this card.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Field History</p>
+              <h2>Operational Log</h2>
+            </div>
+            <button class="btn btn--ghost btn--small" id="clearLog">Clear Log</button>
+          </div>
+          <div class="timeline" id="timeline">
+            <article class="timeline__item">
+              <span class="timeline__time">Waiting</span>
+              <div>
+                <h3>System armed</h3>
+                <p>The dashboard is ready for live feed input and field telemetry.</p>
+              </div>
+            </article>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel panel--wide">
+        <div class="panel__header">
+          <div>
+            <p class="panel__eyebrow">Field Node</p>
+            <h2>ESP32 Telemetry Surface</h2>
+          </div>
+        </div>
+        <div class="sensor-grid">
+          <div class="sensor-card">
+            <span>Soil Moisture</span>
+            <strong id="moistureValue">--</strong>
+            <p id="moistureHint">Live soil moisture reading from the ESP32 field node.</p>
+          </div>
+          <div class="sensor-card">
+            <span>Humidity</span>
+            <strong id="humidityValue">--</strong>
+            <p id="humidityHint">Air humidity helps explain stress and pest-favorable conditions.</p>
+          </div>
+          <div class="sensor-card">
+            <span>Temperature</span>
+            <strong id="temperatureValue">--</strong>
+            <p id="temperatureHint">Ambient temperature from the field node.</p>
+          </div>
+          <div class="sensor-card">
+            <span>Combined Environment</span>
+            <strong id="environmentValue">--</strong>
+            <p id="environmentHint">Temperature, humidity, and moisture will appear here from the ESP32 payload.</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel panel--wide">
+        <div class="panel__header">
+          <div>
+            <p class="panel__eyebrow">Road Map</p>
+            <h2>Product Build Phases</h2>
+          </div>
+        </div>
+        <div class="phase-grid">
+          <article class="phase-card">
+            <span>Phase 01</span>
+            <strong>Proof Of Detection</strong>
+            <p>Connect the camera, draw the pest box, and verify MATLAB detections in the dashboard.</p>
+          </article>
+          <article class="phase-card">
+            <span>Phase 02</span>
+            <strong>Field Node Pilot</strong>
+            <p>Deploy the ESP32, local display, and moisture or climate sensing in real crop conditions.</p>
+          </article>
+          <article class="phase-card">
+            <span>Phase 03</span>
+            <strong>Pilot Validation</strong>
+            <p>Collect false positives, stability issues, and service pain points during trial runs.</p>
+          </article>
+          <article class="phase-card">
+            <span>Phase 04</span>
+            <strong>Product Hardening</strong>
+            <p>Move to enclosure, wiring, better sensors, and long-duration operation with real users.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel panel--wide">
+        <div class="panel__header">
+          <div>
+            <p class="panel__eyebrow">System Flow</p>
+            <h2>Roadmap Pipeline</h2>
+          </div>
+        </div>
+        <div class="pipeline">
+          <div class="pipeline__item">
+            <strong>1. Vision Source</strong>
+            <p>Phone camera or webcam captures crop imagery from the field.</p>
+          </div>
+          <div class="pipeline__item">
+            <strong>2. MATLAB Detection</strong>
+            <p>MATLAB returns pest name, confidence, and bounding box into the API.</p>
+          </div>
+          <div class="pipeline__item">
+            <strong>3. ESP32 Telemetry</strong>
+            <p>The field node contributes moisture, humidity, and temperature readings.</p>
+          </div>
+          <div class="pipeline__item">
+            <strong>4. Farm Decision Layer</strong>
+            <p>The dashboard turns all of it into one readable action view for the farmer.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="timelineTemplate">
+    <article class="timeline__item">
+      <span class="timeline__time"></span>
+      <div>
+        <h3></h3>
+        <p></p>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
