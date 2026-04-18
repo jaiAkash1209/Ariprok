@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CropSentinel | Pest Detection Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="shell">
+    <header class="hero">
+      <div class="hero__copy">
+        <p class="eyebrow">Phase 1 Prototype</p>
+        <h1>CropSentinel Pest Detection Console</h1>
+        <p class="hero__text">
+          A desktop dashboard designed for live pest monitoring using a camera feed today,
+          with ESP32 and NPK sensor integration ready for the next phase.
+        </p>
+        <div class="hero__actions">
+          <button class="btn btn--primary" id="startSession">Start Monitoring</button>
+          <button class="btn btn--ghost" id="simulateAlert">Simulate Detection</button>
+        </div>
+      </div>
+      <div class="hero__panel">
+        <div class="metric">
+          <span class="metric__label">System Status</span>
+          <strong id="systemStatus">Standby</strong>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Current Risk</span>
+          <strong id="riskValue">Low</strong>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Phone Camera Link</span>
+          <strong id="pairingStatus">Not Paired</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashboard">
+      <section class="panel panel--stage">
+        <div class="panel__header">
+          <div>
+            <p class="panel__eyebrow">Live Vision</p>
+            <h2>Detection Stage</h2>
+          </div>
+          <div class="mode-switch" id="sourceModes">
+            <button class="mode-switch__item is-active" data-mode="desktop">Desktop Webcam</button>
+            <button class="mode-switch__item" data-mode="phone">Phone Camera</button>
+            <button class="mode-switch__item" data-mode="upload">Upload Clip</button>
+          </div>
+        </div>
+
+        <div class="stage">
+          <div class="stage__viewport">
+            <video id="liveVideo" autoplay muted playsinline></video>
+            <div class="stage__placeholder" id="videoPlaceholder">
+              <div class="radar"></div>
+              <h3 id="placeholderTitle">Camera feed waiting</h3>
+              <p id="placeholderText">Start with your desktop webcam now, or keep the phone camera panel ready for the next connection step.</p>
+            </div>
+            <div class="stage__overlay">
+              <span>AI Scan Grid</span>
+              <span id="fpsBadge">Idle</span>
+            </div>
+          </div>
+
+          <aside class="stage__controls">
+            <div class="card">
+              <h3>Source Controls</h3>
+              <div class="control-list">
+                <button class="btn btn--secondary" id="desktopConnect">Use Desktop Webcam</button>
+                <button class="btn btn--secondary" id="phonePair">Prepare Phone Link</button>
+                <label class="upload">
+                  <input type="file" id="fileInput" accept="image/*,video/*">
+                  <span>Load Image or Video</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="card">
+              <h3>Session Summary</h3>
+              <ul class="stats">
+                <li><span>Frames reviewed</span><strong id="framesReviewed">000</strong></li>
+                <li><span>Pests flagged</span><strong id="pestsFlagged">00</strong></li>
+                <li><span>Last event</span><strong id="lastEvent">No alerts yet</strong></li>
+              </ul>
+            </div>
+
+            <div class="card">
+              <h3>Future IoT Hook</h3>
+              <p>
+                Reserved for the ESP32 device stream. We will attach soil NPK readings,
+                temperature, moisture, and automated relay actions in phase 2.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section class="panel panel--pairing">
+        <div class="panel__header">
+          <div>
+            <p class="panel__eyebrow">Phone Bridge</p>
+            <h2>Mobile Camera Pairing</h2>
+          </div>
+          <span class="pill" id="phoneBadge">Planned Connection</span>
+        </div>
+
+        <div class="pairing">
+          <div class="pairing__qr">
+            <div class="qr-art" aria-hidden="true">
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+              <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <p>Desktop pairing token</p>
+          </div>
+
+          <div class="pairing__content">
+            <h3>Yes, your phone camera can be used.</h3>
+            <p>
+              The cleanest production path is to open a lightweight mobile page on your phone
+              and stream the camera to this desktop dashboard using WebRTC. As a faster fallback,
+              we can also accept an IP camera app stream URL.
+            </p>
+            <div class="pairing__steps">
+              <div class="step">
+                <strong>1</strong>
+                <p>Phone opens the camera sender page and grants camera permission.</p>
+              </div>
+              <div class="step">
+                <strong>2</strong>
+                <p>Desktop receives the live stream inside this dashboard.</p>
+              </div>
+              <div class="step">
+                <strong>3</strong>
+                <p>Later the AI model and ESP32 sensor data merge into one alert engine.</p>
+              </div>
+            </div>
+            <div class="stream-url">
+              <label for="streamInput">Future stream URL / session code</label>
+              <div class="stream-url__row">
+                <input id="streamInput" type="text" placeholder="Example: webrtc-session-01 or http://phone-stream.local/video">
+                <button class="btn btn--primary" id="connectStream">Connect</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Detection Overview</p>
+              <h2>Risk Cards</h2>
+            </div>
+          </div>
+
+          <div class="risk-grid">
+            <div class="risk-card risk-card--warn">
+              <span class="risk-card__tag">Leaf Activity</span>
+              <strong id="leafRisk">Monitoring</strong>
+              <p>Watching leaf clusters for chewing patterns, spots, and movement anomalies.</p>
+            </div>
+            <div class="risk-card risk-card--safe">
+              <span class="risk-card__tag">Trap Zone</span>
+              <strong id="trapRisk">Stable</strong>
+              <p>No unusual motion patterns detected around the bait-trap reference area.</p>
+            </div>
+            <div class="risk-card risk-card--future">
+              <span class="risk-card__tag">Soil Signals</span>
+              <strong>NPK Pending</strong>
+              <p>ESP32 telemetry card reserved for nitrogen, phosphorus, potassium, and actuator logic.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Event Feed</p>
+              <h2>Pest Log</h2>
+            </div>
+            <button class="btn btn--ghost btn--small" id="clearLog">Clear Log</button>
+          </div>
+          <div class="timeline" id="timeline">
+            <article class="timeline__item">
+              <span class="timeline__time">Waiting</span>
+              <div>
+                <h3>System armed</h3>
+                <p>The dashboard is ready for live feed input and future sensor telemetry.</p>
+              </div>
+            </article>
+          </div>
+        </article>
+
+        <article class="panel panel--wide">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">ESP32 Ready</p>
+              <h2>Sensor Board Placeholder</h2>
+            </div>
+          </div>
+          <div class="sensor-grid">
+            <div class="sensor-card">
+              <span>Nitrogen</span>
+              <strong>--</strong>
+              <p>To be read from NPK probe via ESP32 serial/Wi-Fi.</p>
+            </div>
+            <div class="sensor-card">
+              <span>Phosphorus</span>
+              <strong>--</strong>
+              <p>Reserved for nutrient trend alerts and crop advisory logic.</p>
+            </div>
+            <div class="sensor-card">
+              <span>Potassium</span>
+              <strong>--</strong>
+              <p>Will feed health scoring alongside camera-based pest detection.</p>
+            </div>
+            <div class="sensor-card">
+              <span>Automation</span>
+              <strong>Pending</strong>
+              <p>Future relay or pump action can trigger when pest and soil signals align.</p>
+            </div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <template id="timelineTemplate">
+    <article class="timeline__item">
+      <span class="timeline__time"></span>
+      <div>
+        <h3></h3>
+        <p></p>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js"></script>
+</body>
+</html>
