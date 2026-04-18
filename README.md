@@ -104,6 +104,7 @@ Example payload:
 Firmware starter:
 
 - `esp32/cropsentinel_esp32.ino`
+- `esp32/cropsentinel_esp32_lcd2004.ino` for LCD `2004A` with I2C backpack
 
 Before uploading to the ESP32, edit these values in the sketch:
 
@@ -117,6 +118,7 @@ Important:
 - if the website is running on your computer, use your computer's local IP, not `localhost`
 - the ESP32 and your computer must be on the same Wi-Fi network
 - the sketch currently assumes an `SSD1306 OLED`, `DHT22`, and an analog moisture sensor
+- if your display is `2004A`, use the LCD-specific sketch and notes in `esp32/DISPLAY_NOTES.md`
 
 ## API Endpoints
 
