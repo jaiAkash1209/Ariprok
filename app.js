@@ -1,19 +1,21 @@
 const state = {
   currentMode: "desktop",
   stream: null,
-  framesReviewed: 0,
-  pestsFlagged: 0,
+  pollTimer: null,
 };
 
 const ui = {
   sourceModes: document.getElementById("sourceModes"),
   liveVideo: document.getElementById("liveVideo"),
   videoPlaceholder: document.getElementById("videoPlaceholder"),
+  detectionBox: document.getElementById("detectionBox"),
+  detectionLabel: document.getElementById("detectionLabel"),
   placeholderTitle: document.getElementById("placeholderTitle"),
   placeholderText: document.getElementById("placeholderText"),
   fileInput: document.getElementById("fileInput"),
   startSession: document.getElementById("startSession"),
   simulateAlert: document.getElementById("simulateAlert"),
+  simulateTelemetry: document.getElementById("simulateTelemetry"),
   desktopConnect: document.getElementById("desktopConnect"),
   phonePair: document.getElementById("phonePair"),
   connectStream: document.getElementById("connectStream"),
@@ -21,6 +23,10 @@ const ui = {
   systemStatus: document.getElementById("systemStatus"),
   riskValue: document.getElementById("riskValue"),
   pairingStatus: document.getElementById("pairingStatus"),
+  matlabStatus: document.getElementById("matlabStatus"),
+  esp32Status: document.getElementById("esp32Status"),
+  deviceId: document.getElementById("deviceId"),
+  lastSync: document.getElementById("lastSync"),
   phoneBadge: document.getElementById("phoneBadge"),
   fpsBadge: document.getElementById("fpsBadge"),
   framesReviewed: document.getElementById("framesReviewed"),
@@ -28,6 +34,16 @@ const ui = {
   lastEvent: document.getElementById("lastEvent"),
   leafRisk: document.getElementById("leafRisk"),
   trapRisk: document.getElementById("trapRisk"),
+  soilRisk: document.getElementById("soilRisk"),
+  soilRiskText: document.getElementById("soilRiskText"),
+  nitrogenValue: document.getElementById("nitrogenValue"),
+  nitrogenHint: document.getElementById("nitrogenHint"),
+  phosphorusValue: document.getElementById("phosphorusValue"),
+  phosphorusHint: document.getElementById("phosphorusHint"),
+  potassiumValue: document.getElementById("potassiumValue"),
+  potassiumHint: document.getElementById("potassiumHint"),
+  environmentValue: document.getElementById("environmentValue"),
+  environmentHint: document.getElementById("environmentHint"),
   timeline: document.getElementById("timeline"),
   timelineTemplate: document.getElementById("timelineTemplate"),
   clearLog: document.getElementById("clearLog"),
@@ -36,15 +52,15 @@ const ui = {
 const modeMessages = {
   desktop: {
     title: "Desktop webcam ready",
-    text: "Use this mode for quick testing on the same machine before we connect the phone stream.",
+    text: "Use this mode for quick local testing while the backend waits for MATLAB and ESP32 payloads.",
   },
   phone: {
     title: "Phone camera bridge planned",
-    text: "This UI is ready for a future WebRTC or IP-camera connection from your mobile device.",
+    text: "This mode will accept your mobile stream session once we wire the phone camera sender page.",
   },
   upload: {
     title: "Upload a field image or clip",
-    text: "Great for testing pest screens with existing crop footage before a live stream is attached.",
+    text: "Use this mode to test the dashboard with recorded crop media before a live stream is attached.",
   },
 };
 
@@ -59,26 +75,13 @@ function setMode(mode) {
   ui.placeholderText.textContent = content.text;
 }
 
-function setMonitoringState(status) {
-  ui.systemStatus.textContent = status;
-  ui.fpsBadge.textContent = status === "Monitoring" ? "24 FPS" : status;
-}
+function setBadgeText(status, pairingStatus) {
+  if (state.currentMode === "phone") {
+    ui.phoneBadge.textContent = pairingStatus === "Session Saved" ? "Target Stored" : "WebRTC / IP Camera";
+    return;
+  }
 
-function updateStats() {
-  ui.framesReviewed.textContent = String(state.framesReviewed).padStart(3, "0");
-  ui.pestsFlagged.textContent = String(state.pestsFlagged).padStart(2, "0");
-}
-
-function addLog(title, body) {
-  const fragment = ui.timelineTemplate.content.cloneNode(true);
-  const item = fragment.querySelector(".timeline__item");
-  item.querySelector(".timeline__time").textContent = new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-  item.querySelector("h3").textContent = title;
-  item.querySelector("p").textContent = body;
-  ui.timeline.prepend(item);
+  ui.phoneBadge.textContent = status === "Alert" ? "Attention Needed" : "Planned Connection";
 }
 
 function showVideo() {
@@ -91,10 +94,206 @@ function showPlaceholder() {
   ui.videoPlaceholder.style.display = "grid";
 }
 
+function hideDetectionOverlay() {
+  ui.detectionBox.classList.add("is-hidden");
+}
+
+function renderDetectionOverlay(latestDetection) {
+  const box = latestDetection?.boundingBox;
+  if (!box) {
+    hideDetectionOverlay();
+    return;
+  }
+
+  ui.detectionBox.style.left = `${box.x * 100}%`;
+  ui.detectionBox.style.top = `${box.y * 100}%`;
+  ui.detectionBox.style.width = `${box.width * 100}%`;
+  ui.detectionBox.style.height = `${box.height * 100}%`;
+  ui.detectionLabel.textContent = `${latestDetection.pestName} ${(latestDetection.confidence * 100).toFixed(0)}%`;
+  ui.detectionBox.classList.remove("is-hidden");
+}
+
+function formatLastSync(value) {
+  if (!value) {
+    return "Not synced";
+  }
+
+  return new Date(value).toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function renderSensorValue(value, suffix = "") {
+  return typeof value === "number" ? `${value}${suffix}` : "--";
+}
+
+function renderTimeline(events) {
+  ui.timeline.innerHTML = "";
+
+  events.forEach((event) => {
+    const fragment = ui.timelineTemplate.content.cloneNode(true);
+    const item = fragment.querySelector(".timeline__item");
+    item.querySelector(".timeline__time").textContent = new Date(event.time).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    item.querySelector("h3").textContent = event.title;
+    item.querySelector("p").textContent = event.body;
+    ui.timeline.append(item);
+  });
+}
+
+function applyState(data) {
+  ui.systemStatus.textContent = data.systemStatus;
+  ui.riskValue.textContent = data.currentRisk;
+  ui.pairingStatus.textContent = data.pairingStatus;
+  ui.matlabStatus.textContent = data.matlabStatus;
+  ui.esp32Status.textContent = data.esp32Status;
+  ui.deviceId.textContent = data.deviceId;
+  ui.lastSync.textContent = formatLastSync(data.lastSync);
+  ui.framesReviewed.textContent = String(data.session.framesReviewed).padStart(3, "0");
+  ui.pestsFlagged.textContent = String(data.session.pestsFlagged).padStart(2, "0");
+  ui.lastEvent.textContent = data.session.lastEvent;
+  ui.leafRisk.textContent = data.detection.leafRisk;
+  ui.trapRisk.textContent = data.detection.trapRisk;
+  ui.soilRisk.textContent = data.detection.soilRisk;
+  ui.soilRiskText.textContent = data.detection.soilRiskText;
+  ui.streamInput.value = data.phoneStreamTarget || "";
+  ui.fpsBadge.textContent = data.fps;
+
+  ui.nitrogenValue.textContent = renderSensorValue(data.sensors.nitrogen, " mg/kg");
+  ui.phosphorusValue.textContent = renderSensorValue(data.sensors.phosphorus, " mg/kg");
+  ui.potassiumValue.textContent = renderSensorValue(data.sensors.potassium, " mg/kg");
+
+  const temperature = renderSensorValue(data.sensors.temperature, " C");
+  const moisture = renderSensorValue(data.sensors.moisture, "%");
+  ui.environmentValue.textContent = temperature === "--" && moisture === "--" ? "--" : `${temperature} / ${moisture}`;
+  ui.environmentHint.textContent =
+    typeof data.sensors.temperature === "number" || typeof data.sensors.moisture === "number"
+      ? "Temperature / moisture values received from the latest ESP32 payload."
+      : "Temperature and moisture will appear here from the ESP32 payload.";
+
+  ui.nitrogenHint.textContent =
+    typeof data.sensors.nitrogen === "number"
+      ? "Latest nitrogen value received from the field node."
+      : "To be read from NPK probe via ESP32 serial/Wi-Fi.";
+  ui.phosphorusHint.textContent =
+    typeof data.sensors.phosphorus === "number"
+      ? "Latest phosphorus value received from the field node."
+      : "Reserved for nutrient trend alerts and crop advisory logic.";
+  ui.potassiumHint.textContent =
+    typeof data.sensors.potassium === "number"
+      ? "Latest potassium value received from the field node."
+      : "Will feed health scoring alongside camera-based pest detection.";
+
+  renderDetectionOverlay(data.detection.latest);
+  setBadgeText(data.systemStatus, data.pairingStatus);
+
+  if (Array.isArray(data.events)) {
+    renderTimeline(data.events);
+  }
+}
+
+async function callApi(path, options = {}) {
+  const response = await fetch(path, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+    ...options,
+  });
+
+  if (!response.ok) {
+    const errorPayload = await response.json().catch(() => ({}));
+    throw new Error(errorPayload.error || `Request failed with ${response.status}`);
+  }
+
+  return response.json();
+}
+
+async function refreshState() {
+  try {
+    const data = await callApi("/api/state", { method: "GET" });
+    applyState(data);
+  } catch (error) {
+    ui.systemStatus.textContent = "Backend Offline";
+    ui.lastEvent.textContent = "Start node server.js to enable live IoT features";
+    ui.fpsBadge.textContent = "Offline";
+    hideDetectionOverlay();
+  }
+}
+
+async function postPhoneTarget(target) {
+  await callApi("/api/phone-stream", {
+    method: "POST",
+    body: JSON.stringify({ target }),
+  });
+  await refreshState();
+}
+
+async function simulateDetection() {
+  try {
+    await callApi("/api/detections", {
+      method: "POST",
+      body: JSON.stringify({
+        pestName: "Aphid Cluster",
+        confidence: 0.78,
+        source: "MATLAB Demo",
+        zone: "Leaf Cluster B",
+        boundingBox: {
+          x: 0.3,
+          y: 0.22,
+          width: 0.23,
+          height: 0.28,
+        },
+        fps: 24,
+        framesReviewed: 30,
+      }),
+    });
+    await refreshState();
+  } catch (error) {
+    ui.lastEvent.textContent = error.message;
+  }
+}
+
+async function simulateTelemetry() {
+  try {
+    await callApi("/api/sensors", {
+      method: "POST",
+      body: JSON.stringify({
+        deviceId: "ESP32-GROW-01",
+        sensors: {
+          nitrogen: 42,
+          phosphorus: 24,
+          potassium: 29,
+          moisture: 37,
+          temperature: 29.4,
+        },
+      }),
+    });
+    await refreshState();
+  } catch (error) {
+    ui.lastEvent.textContent = error.message;
+  }
+}
+
+async function clearBackendLog() {
+  try {
+    await callApi("/api/reset", {
+      method: "POST",
+      body: JSON.stringify({}),
+    });
+    await refreshState();
+  } catch (error) {
+    ui.lastEvent.textContent = error.message;
+  }
+}
+
 async function startDesktopCamera() {
   if (!navigator.mediaDevices?.getUserMedia) {
-    addLog("Camera not supported", "This browser does not allow webcam access in the current environment.");
-    ui.lastEvent.textContent = "Webcam not supported";
+    ui.lastEvent.textContent = "Webcam not supported in this browser";
     return;
   }
 
@@ -109,52 +308,39 @@ async function startDesktopCamera() {
     });
 
     state.stream = stream;
+    ui.liveVideo.controls = false;
+    ui.liveVideo.src = "";
     ui.liveVideo.srcObject = stream;
     showVideo();
     setMode("desktop");
-    setMonitoringState("Monitoring");
-    ui.riskValue.textContent = "Scanning";
+    ui.systemStatus.textContent = "Monitoring";
+    ui.fpsBadge.textContent = "24 FPS";
     ui.lastEvent.textContent = "Desktop webcam active";
-    addLog("Desktop feed connected", "Live camera has started. Detection overlays can now be attached in the next phase.");
   } catch (error) {
     showPlaceholder();
-    addLog("Camera permission blocked", "Webcam access was denied or unavailable. You can still test the UI with an uploaded field clip.");
     ui.lastEvent.textContent = "Camera permission blocked";
   }
 }
 
 function preparePhoneMode() {
   setMode("phone");
-  setMonitoringState("Pairing");
   ui.pairingStatus.textContent = "Ready to Pair";
   ui.phoneBadge.textContent = "WebRTC / IP Camera";
   ui.lastEvent.textContent = "Phone pairing prepared";
-  addLog("Phone bridge prepared", "The desktop dashboard is staged for a future mobile camera connection.");
 }
 
-function simulateDetection() {
-  state.framesReviewed += 24;
-  state.pestsFlagged += 1;
-  updateStats();
-  setMonitoringState("Monitoring");
-  ui.riskValue.textContent = "Medium";
-  ui.leafRisk.textContent = "Possible Aphids";
-  ui.trapRisk.textContent = "Check Needed";
-  ui.lastEvent.textContent = "Leaf anomaly detected";
-  addLog("Pest candidate flagged", "Movement and leaf damage pattern matched a watchlist condition. Review this zone and validate with the next AI model.");
-}
-
-function connectFutureStream() {
+async function connectFutureStream() {
   const value = ui.streamInput.value.trim();
   if (!value) {
-    addLog("Missing stream target", "Enter a future session code or phone stream URL before connecting.");
+    ui.lastEvent.textContent = "Enter a future stream URL or session code";
     return;
   }
 
-  ui.pairingStatus.textContent = "Session Saved";
-  ui.phoneBadge.textContent = "Awaiting Backend";
-  ui.lastEvent.textContent = "Phone stream target stored";
-  addLog("Connection placeholder saved", `Stored future phone stream target: ${value}`);
+  try {
+    await postPhoneTarget(value);
+  } catch (error) {
+    ui.lastEvent.textContent = error.message;
+  }
 }
 
 function handleFileLoad(event) {
@@ -169,21 +355,13 @@ function handleFileLoad(event) {
   }
 
   setMode("upload");
-  showVideo();
-  ui.liveVideo.src = URL.createObjectURL(file);
-  ui.liveVideo.srcObject = null;
   ui.liveVideo.controls = true;
-  ui.liveVideo.muted = true;
+  ui.liveVideo.srcObject = null;
+  ui.liveVideo.src = URL.createObjectURL(file);
+  showVideo();
   ui.liveVideo.play().catch(() => {});
-  setMonitoringState("Reviewing");
-  ui.riskValue.textContent = "Manual Review";
   ui.lastEvent.textContent = `Loaded ${file.name}`;
-  addLog("Reference media loaded", `Loaded ${file.name} for offline pest review and UI testing.`);
-}
-
-function clearTimeline() {
-  ui.timeline.innerHTML = "";
-  addLog("Log cleared", "The event feed was reset for the next monitoring session.");
+  ui.fpsBadge.textContent = "Review";
 }
 
 ui.sourceModes.addEventListener("click", (event) => {
@@ -191,6 +369,7 @@ ui.sourceModes.addEventListener("click", (event) => {
   if (!button) {
     return;
   }
+
   setMode(button.dataset.mode);
 });
 
@@ -198,9 +377,12 @@ ui.startSession.addEventListener("click", startDesktopCamera);
 ui.desktopConnect.addEventListener("click", startDesktopCamera);
 ui.phonePair.addEventListener("click", preparePhoneMode);
 ui.simulateAlert.addEventListener("click", simulateDetection);
+ui.simulateTelemetry.addEventListener("click", simulateTelemetry);
 ui.connectStream.addEventListener("click", connectFutureStream);
 ui.fileInput.addEventListener("change", handleFileLoad);
-ui.clearLog.addEventListener("click", clearTimeline);
+ui.clearLog.addEventListener("click", clearBackendLog);
 
-updateStats();
 setMode("desktop");
+hideDetectionOverlay();
+refreshState();
+state.pollTimer = window.setInterval(refreshState, 4000);

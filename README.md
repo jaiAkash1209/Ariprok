@@ -1,30 +1,26 @@
-# CropSentinel Prototype
+# CropSentinel IoT Starter
 
-This folder now contains a first-phase desktop interface for a pest detection system.
+CropSentinel is now a local full-app starter for a pest-detection system that can combine:
 
-## What is included
+- phone camera or desktop webcam input
+- MATLAB pest detection results
+- ESP32 + NPK + environment telemetry
+- a single desktop dashboard for alerts and farm-health status
 
-- `index.html`: main desktop dashboard
-- `styles.css`: visual design and responsive layout
-- `app.js`: interaction logic for webcam testing, phone-link preparation, upload preview, and event simulation
+## Files
 
-## Current scope
+- `index.html`: dashboard UI
+- `styles.css`: responsive visual styling
+- `app.js`: browser-side dashboard logic
+- `server.js`: local Node server and REST API
+- `matlab/send_detection_example.m`: MATLAB starter to push pest detections into the app
 
-This version focuses on interface and workflow only:
+## Run The App
 
-- desktop webcam preview for quick testing
-- a dedicated phone camera pairing panel
-- pest monitoring cards and event timeline
-- placeholder zone for future ESP32 + NPK sensor telemetry
-
-## How to run
-
-Open `index.html` in a browser.
-
-For webcam access, a local server is often more reliable than opening the file directly. If needed, run one of these from this folder:
+From `F:\Ariprok`:
 
 ```powershell
-python -m http.server 8000
+node server.js
 ```
 
 Then open:
@@ -33,23 +29,84 @@ Then open:
 http://localhost:8000
 ```
 
-## Best path for your phone camera later
+## What Works Now
 
-Recommended:
+- full local dashboard served by Node
+- live desktop webcam preview
+- backend API for phone stream target
+- backend API for MATLAB detection payloads
+- backend API for ESP32 sensor payloads
+- event timeline and risk state driven by backend data
+- demo buttons for simulated pest and sensor events
 
-1. Create a small mobile web page that uses the phone camera with `getUserMedia`.
-2. Stream that video to the desktop dashboard with WebRTC.
-3. Feed the same detection results into the ESP32 sensor dashboard.
+## MATLAB Integration
 
-Fast fallback:
+MATLAB can post detections to:
 
-1. Use an IP camera app on the phone.
-2. Send the stream URL into the desktop app.
-3. Parse the feed in the dashboard/backend later.
+```text
+POST http://localhost:8000/api/detections
+```
 
-## Next phase ideas
+Example payload:
 
-- add real pest detection inference
-- add phone-to-desktop live streaming
-- connect ESP32 over serial, Wi-Fi, or MQTT
-- display real NPK values and trigger alerts/actions
+```json
+{
+  "pestName": "Aphid Cluster",
+  "confidence": 0.84,
+  "source": "MATLAB",
+  "zone": "Leaf Cluster A",
+  "boundingBox": {
+    "x": 0.30,
+    "y": 0.22,
+    "width": 0.23,
+    "height": 0.28
+  },
+  "fps": 24,
+  "framesReviewed": 30
+}
+```
+
+`boundingBox` uses normalized values from `0` to `1`, so the dashboard can draw the detection square on top of the live camera view.
+
+Starter script:
+
+- `matlab/send_detection_example.m`
+
+## ESP32 Integration
+
+ESP32 can post telemetry to:
+
+```text
+POST http://localhost:8000/api/sensors
+```
+
+Example payload:
+
+```json
+{
+  "deviceId": "ESP32-GROW-01",
+  "sensors": {
+    "nitrogen": 42,
+    "phosphorus": 24,
+    "potassium": 29,
+    "moisture": 37,
+    "temperature": 29.4
+  }
+}
+```
+
+## API Endpoints
+
+- `GET /api/state`: current dashboard state
+- `POST /api/phone-stream`: save phone stream URL or session code
+- `POST /api/detections`: ingest MATLAB pest detections
+- `POST /api/sensors`: ingest ESP32 telemetry
+- `POST /api/demo/seed`: inject demo detection and telemetry data
+- `POST /api/reset`: reset dashboard state
+
+## Suggested Next Steps
+
+1. Connect your real MATLAB detection code to `/api/detections`.
+2. Build the phone camera sender page or IP-camera stream hook.
+3. Write ESP32 firmware to send NPK and environment data to `/api/sensors`.
+4. Add a decision engine for pesticide advice or automated action.

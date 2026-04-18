@@ -22,22 +22,27 @@
         <div class="hero__actions">
           <button class="btn btn--primary" id="startSession">Start Monitoring</button>
           <button class="btn btn--ghost" id="simulateAlert">Simulate Detection</button>
+          <button class="btn btn--ghost" id="simulateTelemetry">Inject Sensor Demo</button>
         </div>
       </div>
-      <div class="hero__panel">
-        <div class="metric">
-          <span class="metric__label">System Status</span>
-          <strong id="systemStatus">Standby</strong>
-        </div>
+        <div class="hero__panel">
+          <div class="metric">
+            <span class="metric__label">System Status</span>
+            <strong id="systemStatus">Standby</strong>
+          </div>
         <div class="metric">
           <span class="metric__label">Current Risk</span>
           <strong id="riskValue">Low</strong>
         </div>
-        <div class="metric">
-          <span class="metric__label">Phone Camera Link</span>
-          <strong id="pairingStatus">Not Paired</strong>
+          <div class="metric">
+            <span class="metric__label">Phone Camera Link</span>
+            <strong id="pairingStatus">Not Paired</strong>
+          </div>
+          <div class="metric">
+            <span class="metric__label">MATLAB Engine</span>
+            <strong id="matlabStatus">Waiting</strong>
+          </div>
         </div>
-      </div>
     </header>
 
     <main class="dashboard">
@@ -61,6 +66,9 @@
               <div class="radar"></div>
               <h3 id="placeholderTitle">Camera feed waiting</h3>
               <p id="placeholderText">Start with your desktop webcam now, or keep the phone camera panel ready for the next connection step.</p>
+            </div>
+            <div class="detection-box is-hidden" id="detectionBox">
+              <div class="detection-box__label" id="detectionLabel">Pest detected</div>
             </div>
             <div class="stage__overlay">
               <span>AI Scan Grid</span>
@@ -91,11 +99,12 @@
             </div>
 
             <div class="card">
-              <h3>Future IoT Hook</h3>
-              <p>
-                Reserved for the ESP32 device stream. We will attach soil NPK readings,
-                temperature, moisture, and automated relay actions in phase 2.
-              </p>
+              <h3>IoT Backbone</h3>
+              <ul class="stats">
+                <li><span>ESP32 link</span><strong id="esp32Status">Waiting</strong></li>
+                <li><span>Device ID</span><strong id="deviceId">ESP32-GROW-01</strong></li>
+                <li><span>Last sync</span><strong id="lastSync">Not synced</strong></li>
+              </ul>
             </div>
           </aside>
         </div>
@@ -176,8 +185,8 @@
             </div>
             <div class="risk-card risk-card--future">
               <span class="risk-card__tag">Soil Signals</span>
-              <strong>NPK Pending</strong>
-              <p>ESP32 telemetry card reserved for nitrogen, phosphorus, potassium, and actuator logic.</p>
+              <strong id="soilRisk">Pending Sync</strong>
+              <p id="soilRiskText">ESP32 telemetry will set the nutrient and soil-health summary for this card.</p>
             </div>
           </div>
         </article>
@@ -205,29 +214,56 @@
           <div class="panel__header">
             <div>
               <p class="panel__eyebrow">ESP32 Ready</p>
-              <h2>Sensor Board Placeholder</h2>
+              <h2>Sensor Board Live State</h2>
             </div>
           </div>
           <div class="sensor-grid">
             <div class="sensor-card">
               <span>Nitrogen</span>
-              <strong>--</strong>
-              <p>To be read from NPK probe via ESP32 serial/Wi-Fi.</p>
+              <strong id="nitrogenValue">--</strong>
+              <p id="nitrogenHint">To be read from NPK probe via ESP32 serial/Wi-Fi.</p>
             </div>
             <div class="sensor-card">
               <span>Phosphorus</span>
-              <strong>--</strong>
-              <p>Reserved for nutrient trend alerts and crop advisory logic.</p>
+              <strong id="phosphorusValue">--</strong>
+              <p id="phosphorusHint">Reserved for nutrient trend alerts and crop advisory logic.</p>
             </div>
             <div class="sensor-card">
               <span>Potassium</span>
-              <strong>--</strong>
-              <p>Will feed health scoring alongside camera-based pest detection.</p>
+              <strong id="potassiumValue">--</strong>
+              <p id="potassiumHint">Will feed health scoring alongside camera-based pest detection.</p>
             </div>
             <div class="sensor-card">
-              <span>Automation</span>
-              <strong>Pending</strong>
-              <p>Future relay or pump action can trigger when pest and soil signals align.</p>
+              <span>Environment</span>
+              <strong id="environmentValue">--</strong>
+              <p id="environmentHint">Temperature and moisture will appear here from the ESP32 payload.</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel panel--wide">
+          <div class="panel__header">
+            <div>
+              <p class="panel__eyebrow">Integration Steps</p>
+              <h2>IoT + MATLAB Pipeline</h2>
+            </div>
+          </div>
+          <div class="pipeline">
+            <div class="pipeline__item">
+              <strong>1. Vision Source</strong>
+              <p>Phone camera or webcam sends frames to the dashboard.</p>
+            </div>
+            <div class="pipeline__item">
+              <strong>2. MATLAB Detection</strong>
+              <p>MATLAB posts pest name, confidence, and marked zone into the local API.</p>
+            </div>
+            <div class="pipeline__item">
+              <strong>3. ESP32 Telemetry</strong>
+              <p>ESP32 pushes NPK, moisture, and temperature to the same backend.</p>
+            </div>
+            <div class="pipeline__item">
+              <strong>4. Decision Layer</strong>
+              <p>The dashboard combines pest and soil signals into one farm-health status.</p>
             </div>
           </div>
         </article>

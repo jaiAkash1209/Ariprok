@@ -266,6 +266,32 @@ video {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+.detection-box {
+  position: absolute;
+  border: 3px solid #ffb347;
+  border-radius: 18px;
+  box-shadow: 0 0 0 9999px rgba(8, 16, 13, 0.08), 0 0 24px rgba(255, 179, 71, 0.35);
+  pointer-events: none;
+  transition: 180ms ease;
+}
+
+.detection-box.is-hidden {
+  opacity: 0;
+}
+
+.detection-box__label {
+  position: absolute;
+  top: -42px;
+  left: 0;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 179, 71, 0.96);
+  color: #17352a;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
 .stage__controls {
   display: grid;
   gap: 16px;
@@ -485,7 +511,8 @@ video {
 }
 
 .risk-grid,
-.sensor-grid {
+.sensor-grid,
+.pipeline {
   display: grid;
   gap: 14px;
 }
@@ -592,6 +619,30 @@ video {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.pipeline {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.pipeline__item {
+  padding: 18px;
+  border-radius: 22px;
+  background: rgba(255, 249, 236, 0.72);
+  border: 1px solid rgba(23, 53, 42, 0.08);
+}
+
+.pipeline__item strong {
+  display: block;
+  margin-bottom: 10px;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+}
+
+.pipeline__item p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
 .sensor-card {
   background: linear-gradient(180deg, rgba(23, 53, 42, 0.92), rgba(10, 21, 17, 0.98));
   color: #fff2dd;
@@ -627,7 +678,8 @@ video {
 
   .risk-grid,
   .sensor-grid,
-  .pairing__steps {
+  .pairing__steps,
+  .pipeline {
     grid-template-columns: 1fr;
   }
 }
