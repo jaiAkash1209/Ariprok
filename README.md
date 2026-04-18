@@ -39,6 +39,14 @@ http://localhost:8000
 - event timeline and risk state driven by backend data
 - demo buttons for simulated pest and sensor events
 
+## Product Docs
+
+This repo now also includes product-planning docs for a real deployment:
+
+- `docs/product-architecture.md`
+- `docs/bom.md`
+- `docs/pilot-plan.md`
+
 ## MATLAB Integration
 
 MATLAB can post detections to:
